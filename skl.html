@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<title>Sakura Ateriel PRO</title>
+
+<style>
+body{
+margin:0;
+font-family:Arial;
+background:#f5f5f5;
+color:#111;
+}
+
+header{
+background:linear-gradient(90deg,hsl(331,100%,84%),hsl(331,90%,75%));
+padding:15px;
+display:flex;
+justify-content:space-between;
+align-items:center;
+color:black;
+}
+
+.logo{font-size:24px;font-weight:bold}
+
+input{
+padding:8px;
+width:200px;
+border:none;
+border-radius:6px;
+}
+
+.container{display:flex}
+
+.sidebar{
+width:200px;
+background:#222;
+padding:10px;
+height:100vh;
+color:white;
+}
+
+.sidebar button{
+width:100%;
+padding:10px;
+margin:5px 0;
+background:#333;
+border:none;
+color:white;
+cursor:pointer;
+border-radius:6px;
+}
+
+.products{
+flex:1;
+display:grid;
+grid-template-columns:repeat(3,1fr);
+gap:15px;
+padding:20px;
+}
+
+.card{
+background:white;
+padding:10px;
+border-radius:12px;
+box-shadow:0 3px 10px rgba(0,0,0,0.1);
+}
+
+button.buy{
+width:100%;
+padding:8px;
+background:hsl(331,96%,82%);
+border:none;
+color:black;
+cursor:pointer;
+margin-top:5px;
+border-radius:6px;
+}
+
+.cart{
+width:260px;
+background:white;
+padding:10px;
+box-shadow:0 0 10px rgba(0,0,0,0.1);
+}
+
+.order{
+border-bottom:1px solid #ddd;
+padding:8px 0;
+}
+
+.status{
+font-weight:bold;
+}
+
+.done{color:green;}
+.notdone{color:red;}
+
+.trash{
+cursor:pointer;
+float:right;
+color:red;
+font-size:18px;
+}
+
+</style>
+</head>
+
+<body>
+
+<header>
+<div class="logo">🛒 Sakura Ateriel</div>
+<input id="search" oninput="search()" placeholder="Szukaj...">
+</header>
+
+<div class="container">
+
+<div class="sidebar">
+
+<h3>Kategorie</h3>
+
+<button onclick="filter('all')">Wszystko</button>
+<button onclick="filter('koszulki')">Koszulki</button>
+<button onclick="filter('spodnie')">Spodnie</button>
+<button onclick="filter('buty')">Buty</button>
+<button onclick="filter('akcesoria')">Akcesoria</button>
+
+<hr>
+
+<button onclick="showOrders()">📦 Zamówienia</button>
+
+</div>
+
+<!-- PRODUCTS -->
+<div class="products">
+
+<div class="card" data-cat="koszulki">
+<h3>T-Shirt</h3>
+<p>30 zł</p>
+<button class="buy" onclick="add('T-Shirt',30)">Dodaj</button>
+</div>
+
+<div class="card" data-cat="spodnie">
+<h3>Jeans</h3>
+<p>50 zł</p>
+<button class="buy" onclick="add('Jeans',50)">Dodaj</button>
+</div>
+
+</div>
+
+<!-- CART -->
+<div class="cart">
+
+<h3>Koszyk</h3>
+<div id="list"></div>
+<p>Razem: <span id="total">0</span> zł</p>
+
+<h3>Dane</h3>
+<input id="name" placeholder="Imię"><br><br>
+<input id="phone" placeholder="Telefon"><br><br>
+<input id="address" placeholder="Adres"><br><br>
+
+<button class="buy" onclick="checkout()">Zamów</button>
+
+</div>
+
+</div>
+
+<script>
+
+let cart=[];
+
+function add(name,price){
+cart.push({name,price});
+render();
+}
+
+function render(){
+let list=document.getElementById("list");
+let total=0;
+list.innerHTML="";
+
+cart.forEach(p=>{
+list.innerHTML+=`<p>${p.name} - ${p.price} zł</p>`;
+total+=p.price;
+});
+
+document.getElementById("total").innerText=total;
+}
+
+function filter(cat){
+document.querySelectorAll(".card").forEach(c=>{
+c.style.display=(cat=="all"||c.dataset.cat==cat)?"block":"none";
+});
+}
+
+function search(){
+let val=document.getElementById("search").value.toLowerCase();
+document.querySelectorAll(".card").forEach(c=>{
+c.style.display=c.innerText.toLowerCase().includes(val)?"block":"none";
+});
+}
+
+function saveOrder(order){
+let orders=JSON.parse(localStorage.getItem("orders")||"[]");
+orders.push(order);
+localStorage.setItem("orders",JSON.stringify(orders));
+}
+
+function deleteOrder(index){
+let orders=JSON.parse(localStorage.getItem("orders")||"[]");
+
+if(confirm("Czy na pewno chcesz usunąć to zamówienie?")){
+orders.splice(index,1);
+localStorage.setItem("orders",JSON.stringify(orders));
+showOrders();
+}
+}
+
+function toggleStatus(index){
+let orders=JSON.parse(localStorage.getItem("orders")||"[]");
+orders[index].done=!orders[index].done;
+localStorage.setItem("orders",JSON.stringify(orders));
+showOrders();
+}
+
+function showOrders(){
+let orders=JSON.parse(localStorage.getItem("orders")||"[]");
+
+if(orders.length===0){
+alert("Brak zamówień");
+return;
+}
+
+let html="";
+
+orders.forEach((o,i)=>{
+html+=`
+<div class="order">
+🧾 Zamówienie #${i+1}
+<span class="trash" onclick="deleteOrder(${i})">🗑️</span><br>
+
+Imię: ${o.name}<br>
+Telefon: ${o.phone}<br>
+Adres: ${o.address}<br>
+Produkty: ${o.items}<br>
+Suma: ${o.total} zł<br>
+
+Status: <span class="${o.done?'done':'notdone'}">
+${o.done?'ZREALIZOWANE':'NIE'}
+</span>
+
+<br>
+<button onclick="toggleStatus(${i})">Zmień status</button>
+</div>
+`;
+});
+
+document.getElementById("list").innerHTML=html;
+}
+
+function checkout(){
+
+if(cart.length==0){
+alert("Koszyk pusty!");
+return;
+}
+
+let name=document.getElementById("name").value;
+let phone=document.getElementById("phone").value;
+let address=document.getElementById("address").value;
+
+let items=cart.map(p=>p.name).join(", ");
+let total=cart.reduce((a,b)=>a+b.price,0);
+
+saveOrder({
+name,
+phone,
+address,
+items,
+total,
+done:false
+});
+
+alert("Zamówienie zapisane 🛒");
+
+cart=[];
+render();
+}
+
+</script>
+
+</body>
+</html>
